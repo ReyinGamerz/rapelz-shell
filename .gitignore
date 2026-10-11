@@ -1,0 +1,11 @@
+# Build artifacts
+/rapelz
+/tests/test_completion
+*.o
+*.a
+
+# Editor / OS noise
+.DS_Store
+*.swp
+*.swo
+*~
