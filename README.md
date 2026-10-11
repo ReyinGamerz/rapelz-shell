@@ -2,6 +2,12 @@
 
 RAPELZ adalah shell terminal mandiri yang ditulis dari nol menggunakan C untuk Termux/Linux. RAPELZ tidak memakai Bash atau Zsh sebagai mesin shell.
 
+## Target kompatibilitas
+
+RAPELZ sedang dikembangkan untuk mendekati perilaku Bash/Zsh pada fitur yang paling berguna, sambil tetap ringan dan cocok untuk Termux. RAPELZ **belum setara 99% dengan Bash/Zsh**: konstruksi bahasa shell, fungsi, heredoc, ekspansi lanjutan, dan beberapa perilaku job control masih perlu dikembangkan dan diuji.
+
+Lihat [COMPATIBILITY.md](COMPATIBILITY.md) untuk target, urutan pengerjaan, dan gerbang pengujian. Jangan menganggap fitur dalam roadmap sebagai fitur yang sudah tersedia.
+
 ## v0.9 (pengembangan)
 
 Penambahan bertahap: directory stack dengan builtin `pushd`, `popd`, dan `dirs`.
@@ -38,15 +44,7 @@ Line editor:
 - kiri/kanan
 - Home/End
 - Delete/Backspace
-- Ctrl+A/E/B/F
-- Ctrl+P/N
-- Ctrl+W/U/K
-- Ctrl+R reverse history search
-- Ctrl+C
-- Ctrl+D
-- Ctrl+L
-- Ctrl+T
-- Ctrl+_ undo sederhana
+- Ctrl+A/E/B/F/P/N/R/L/C/D/W/U/K/T/_
 - Alt+B/F dan Ctrl+Left/Right
 - Tab, Ctrl+I, Ctrl+Space/NUL untuk completion
 - ↑ dan ↓ menavigasi command history; End menerima autosuggestion. Jika tidak ada suggestion, End pindah ke ujung baris
