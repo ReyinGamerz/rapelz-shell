@@ -37,6 +37,10 @@ static int last_status_value;
 static int pipefail_option;
 static int capture_depth;
 
+#define RAPELZ_DIR_STACK_MAX 32
+static char directory_stack[RAPELZ_DIR_STACK_MAX][4096];
+static size_t directory_stack_count;
+
 static void write_best_effort(int fd, const void *buf, size_t len) {
     ssize_t result = write(fd, buf, len);
     (void)result;
@@ -145,6 +149,8 @@ void rapelz_shell_init(void) {
     last_status_value = 0;
     pipefail_option = 0;
     capture_depth = 0;
+    directory_stack_count = 0;
+    memset(directory_stack, 0, sizeof(directory_stack));
     init_job_control();
     rapelz_install_signals();
 }
@@ -345,6 +351,84 @@ static int builtin_cd(char **av, int ac) {
     return 0;
 }
 
+static int builtin_dirs(char **av, int ac) {
+    if (ac != 1) {
+        fprintf(stderr, "rapelz: dirs: tidak menerima argumen\n");
+        return 2;
+    }
+
+    char current[4096];
+    if (!getcwd(current, sizeof(current))) {
+        fprintf(stderr, "rapelz: dirs: %s\n", strerror(errno));
+        return 1;
+    }
+
+    printf("%s", current);
+    for (size_t i = directory_stack_count; i > 0; i--)
+        printf(" %s", directory_stack[i - 1]);
+    putchar('\n');
+    return 0;
+}
+
+static int builtin_pushd(char **av, int ac) {
+    if (ac > 2) {
+        fprintf(stderr, "rapelz: pushd: penggunaan: pushd [DIREKTORI]\n");
+        return 2;
+    }
+
+    if (ac == 1 && directory_stack_count == 0) {
+        fprintf(stderr, "rapelz: pushd: stack direktori kosong\n");
+        return 1;
+    }
+    if (ac == 2 && directory_stack_count >= RAPELZ_DIR_STACK_MAX) {
+        fprintf(stderr, "rapelz: pushd: stack direktori penuh (maksimum %d)\n",
+                RAPELZ_DIR_STACK_MAX);
+        return 1;
+    }
+
+    char current[4096];
+    if (!getcwd(current, sizeof(current))) {
+        fprintf(stderr, "rapelz: pushd: %s\n", strerror(errno));
+        return 1;
+    }
+
+    const char *target = ac == 2 ? av[1] : directory_stack[directory_stack_count - 1];
+    char *cd_argv[] = { "cd", (char *)target, NULL };
+    int status = builtin_cd(cd_argv, 2);
+    if (status != 0) return status;
+
+    if (ac == 2) {
+        snprintf(directory_stack[directory_stack_count],
+                 sizeof(directory_stack[directory_stack_count]), "%s", current);
+        directory_stack_count++;
+    } else {
+        snprintf(directory_stack[directory_stack_count - 1],
+                 sizeof(directory_stack[directory_stack_count - 1]), "%s", current);
+    }
+
+    return builtin_dirs((char *[]){ "dirs", NULL }, 1);
+}
+
+static int builtin_popd(char **av, int ac) {
+    if (ac != 1) {
+        fprintf(stderr, "rapelz: popd: tidak menerima argumen\n");
+        return 2;
+    }
+    if (directory_stack_count == 0) {
+        fprintf(stderr, "rapelz: popd: stack direktori kosong\n");
+        return 1;
+    }
+
+    const char *target = directory_stack[directory_stack_count - 1];
+    char *cd_argv[] = { "cd", (char *)target, NULL };
+    int status = builtin_cd(cd_argv, 2);
+    if (status != 0) return status;
+
+    directory_stack_count--;
+    directory_stack[directory_stack_count][0] = '\0';
+    return builtin_dirs((char *[]){ "dirs", NULL }, 1);
+}
+
 static int builtin_pwd(char **av, int ac) {
     int physical = 0;
     for (int i = 1; i < ac; i++) {
@@ -536,7 +620,8 @@ static int lookup_command(const char *name, char *out, size_t cap) {
 int rapelz_builtin_exists(const char *name) {
     static const char *const b[] = {
         "alias","bg","cd","command","eval","exit","false","fg","help","history",
-        "jobs","pwd","set","source","true","type","unalias","unset","wait","export","."
+        "jobs","pwd","set","source","true","type","unalias","unset","wait","export",".",
+        "dirs","pushd","popd"
     };
     for (size_t i = 0; i < sizeof(b)/sizeof(b[0]); i++)
         if (!strcmp(name, b[i])) return 1;
@@ -598,7 +683,7 @@ static int builtin_command(char **av, int ac) {
 
 static int builtin_help(void) {
     puts("RAPELZ builtin:");
-    puts("cd pwd exit export unset history alias unalias set source . eval type command");
+    puts("cd pwd pushd popd dirs exit export unset history alias unalias set source . eval type command");
     puts("jobs fg bg wait true false help");
     puts("Operator: | |& < > >> 2> 2>> n>&m n>&- && || ; &");
     puts("Shortcut editor: Ctrl+A/E/B/F/P/N/R/L/C/D/W/U/K/T/_");
@@ -629,6 +714,9 @@ static int builtin_source(char **av, int ac) {
 static int builtin_simple(char **av, int ac, int in_child) {
     if (ac == 0) return 0;
     if (!strcmp(av[0], "cd")) return builtin_cd(av, ac);
+    if (!strcmp(av[0], "pushd")) return builtin_pushd(av, ac);
+    if (!strcmp(av[0], "popd")) return builtin_popd(av, ac);
+    if (!strcmp(av[0], "dirs")) return builtin_dirs(av, ac);
     if (!strcmp(av[0], "pwd")) return builtin_pwd(av, ac);
     if (!strcmp(av[0], "exit")) return builtin_exit(av, ac, in_child);
     if (!strcmp(av[0], "export")) return builtin_export(av, ac);
