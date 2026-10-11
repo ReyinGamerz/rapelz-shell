@@ -352,6 +352,7 @@ static int builtin_cd(char **av, int ac) {
 }
 
 static int builtin_dirs(char **av, int ac) {
+    (void)av;
     if (ac != 1) {
         fprintf(stderr, "rapelz: dirs: tidak menerima argumen\n");
         return 2;
