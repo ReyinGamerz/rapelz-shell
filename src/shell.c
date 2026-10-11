@@ -411,6 +411,7 @@ static int builtin_pushd(char **av, int ac) {
 }
 
 static int builtin_popd(char **av, int ac) {
+    (void)av;
     if (ac != 1) {
         fprintf(stderr, "rapelz: popd: tidak menerima argumen\n");
         return 2;
