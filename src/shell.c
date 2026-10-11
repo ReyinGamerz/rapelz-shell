@@ -622,7 +622,7 @@ static int lookup_command(const char *name, char *out, size_t cap) {
 int rapelz_builtin_exists(const char *name) {
     static const char *const b[] = {
         "alias","bg","cd","command","eval","exit","false","fg","help","history",
-        "jobs","pwd","set","source","true","type","unalias","unset","wait","export",".",
+        "jobs","pwd","set","source","true","type","which","unalias","unset","wait","export",".",
         "dirs","pushd","popd"
     };
     for (size_t i = 0; i < sizeof(b)/sizeof(b[0]); i++)
@@ -631,14 +631,33 @@ int rapelz_builtin_exists(const char *name) {
 }
 
 static int builtin_type(char **av, int ac) {
+    int all = ac > 1 && !strcmp(av[1], "-a");
+    int start = all ? 2 : 1;
     int st = 0;
-    for (int i = 1; i < ac; i++) {
-        if (rapelz_alias_exists(av[i])) printf("%s adalah alias\n", av[i]);
-        else if (rapelz_builtin_exists(av[i])) printf("%s adalah builtin RAPELZ\n", av[i]);
-        else {
-            char p[4096];
-            if (lookup_command(av[i], p, sizeof(p))) printf("%s -> %s\n", av[i], p);
-            else { printf("%s: tidak ditemukan\n", av[i]); st = 1; }
+    if (start >= ac) {
+        fprintf(stderr, "rapelz: type: penggunaan: type [-a] NAME...\n");
+        return 2;
+    }
+    for (int i = start; i < ac; i++) {
+        int found = 0;
+        if (rapelz_alias_exists(av[i])) {
+            printf("%s adalah alias\n", av[i]);
+            found = 1;
+            if (!all) continue;
+        }
+        if (rapelz_builtin_exists(av[i])) {
+            printf("%s adalah builtin RAPELZ\n", av[i]);
+            found = 1;
+            if (!all) continue;
+        }
+        char p[4096];
+        if (lookup_command(av[i], p, sizeof(p))) {
+            printf("%s -> %s\n", av[i], p);
+            found = 1;
+        }
+        if (!found) {
+            printf("%s: tidak ditemukan\n", av[i]);
+            st = 1;
         }
     }
     return st;
@@ -646,17 +665,27 @@ static int builtin_type(char **av, int ac) {
 
 static int builtin_command(char **av, int ac) {
     if (ac < 2) return 0;
-    if (ac == 3 && !strcmp(av[1], "-v")) {
-        char p[4096];
-        if (rapelz_builtin_exists(av[2]) || rapelz_alias_exists(av[2])) {
-            puts(av[2]);
-            return 0;
+    if (!strcmp(av[1], "-v") || !strcmp(av[1], "-V")) {
+        int verbose = !strcmp(av[1], "-V");
+        if (ac < 3) return 0;
+        int st = 0;
+        for (int i = 2; i < ac; i++) {
+            char p[4096];
+            if (rapelz_alias_exists(av[i])) {
+                if (verbose) printf("%s adalah alias\n", av[i]);
+                else puts(av[i]);
+            } else if (rapelz_builtin_exists(av[i])) {
+                if (verbose) printf("%s adalah builtin RAPELZ\n", av[i]);
+                else puts(av[i]);
+            } else if (lookup_command(av[i], p, sizeof(p))) {
+                if (verbose) printf("%s\n", p);
+                else puts(p);
+            } else {
+                if (verbose) printf("%s: tidak ditemukan\n", av[i]);
+                st = 1;
+            }
         }
-        if (lookup_command(av[2], p, sizeof(p))) {
-            puts(p);
-            return 0;
-        }
-        return 1;
+        return st;
     }
 
     int start = 1;
@@ -683,9 +712,26 @@ static int builtin_command(char **av, int ac) {
     return wait_status(st);
 }
 
+static int builtin_which(char **av, int ac) {
+    if (ac < 2) {
+        fprintf(stderr, "rapelz: which: penggunaan: which NAME...\n");
+        return 2;
+    }
+    int st = 0;
+    for (int i = 1; i < ac; i++) {
+        char path[4096];
+        if (lookup_command(av[i], path, sizeof(path))) puts(path);
+        else {
+            fprintf(stderr, "rapelz: which: %s: tidak ditemukan\n", av[i]);
+            st = 1;
+        }
+    }
+    return st;
+}
+
 static int builtin_help(void) {
     puts("RAPELZ builtin:");
-    puts("cd pwd pushd popd dirs exit export unset history alias unalias set source . eval type command");
+    puts("cd pwd pushd popd dirs exit export unset history alias unalias set source . eval type type -a command -v/-V which");
     puts("jobs fg bg wait true false help");
     puts("Operator: | |& < > >> 2> 2>> n>&m n>&- && || ; &");
     puts("Shortcut editor: Ctrl+A/E/B/F/P/N/R/L/C/D/W/U/K/T/_");
@@ -728,6 +774,7 @@ static int builtin_simple(char **av, int ac, int in_child) {
     if (!strcmp(av[0], "unalias")) return builtin_unalias(av, ac);
     if (!strcmp(av[0], "set")) return builtin_set(av, ac);
     if (!strcmp(av[0], "type")) return builtin_type(av, ac);
+    if (!strcmp(av[0], "which")) return builtin_which(av, ac);
     if (!strcmp(av[0], "help")) return builtin_help();
     if (!strcmp(av[0], "eval")) return builtin_eval(av, ac);
     if (!strcmp(av[0], "source") || !strcmp(av[0], ".")) return builtin_source(av, ac);
