@@ -283,4 +283,12 @@ assert_out 'pushd adalah builtin RAPELZ'
 assert_out 'popd adalah builtin RAPELZ'
 assert_out 'dirs adalah builtin RAPELZ'
 
+# Command discovery compatibility: command -v/-V, type -a, and which.
+run 'command -v echo sh; command -V echo; type -a echo; which sh'
+assert_out 'echo'
+assert_out 'echo adalah builtin RAPELZ'
+assert_out '->'
+run 'command -v rapelz-command-that-does-not-exist; echo $?'
+assert_out 1
+
 echo "OK: test inti RAPELZ lulus"
