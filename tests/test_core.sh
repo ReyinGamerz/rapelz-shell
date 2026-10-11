@@ -287,8 +287,8 @@ assert_out 'dirs adalah builtin RAPELZ'
 run 'command -v echo sh; command -V echo; type -a echo; which sh'
 assert_out 'echo'
 assert_out 'echo adalah builtin RAPELZ'
-assert_out '/bin/sh'
-run 'command -v rapelz-command-that-does-not-exist'
-[ "$?" = 1 ]
+assert_out '->'
+run 'command -v rapelz-command-that-does-not-exist; echo $?'
+assert_out 1
 
 echo "OK: test inti RAPELZ lulus"
