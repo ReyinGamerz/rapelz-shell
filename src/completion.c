@@ -35,7 +35,7 @@ static void add_builtins(completion_list *list, const char *prefix) {
     static const char *const builtins[] = {
         ".", "alias", "bg", "cd", "command", "eval", "exit", "false", "fg",
         "help", "history", "jobs", "pwd", "set", "source", "true", "type",
-        "unalias", "unset", "wait", "export"
+        "unalias", "unset", "wait", "export", "dirs", "pushd", "popd"
     };
     for (size_t i = 0; i < sizeof(builtins) / sizeof(builtins[0]); i++)
         if (starts_with(builtins[i], prefix)) add_candidate(list, builtins[i]);
