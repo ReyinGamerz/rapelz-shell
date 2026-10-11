@@ -2,6 +2,10 @@
 
 RAPELZ adalah shell terminal mandiri yang ditulis dari nol menggunakan C untuk Termux/Linux. RAPELZ tidak memakai Bash atau Zsh sebagai mesin shell.
 
+## v0.9 (pengembangan)
+
+Penambahan bertahap: directory stack dengan builtin `pushd`, `popd`, dan `dirs`.
+
 ## v0.8
 
 Rilis ini memperkuat fondasi shell: parser, expansion, pipeline, redirection, operator, environment, alias, history persisten, line editor, autosuggestion, completion, syntax highlighting, dan job control dasar.
@@ -28,7 +32,7 @@ Shell core:
 - lazy expansion agar state dan $? mengikuti command yang benar-benar sudah berjalan
 
 Builtin:
-cd, pwd, exit, export, unset, history, alias, unalias, set, source, ., eval, type, command, jobs, fg, bg, wait, true, false, help.
+cd, pwd, pushd, popd, dirs, exit, export, unset, history, alias, unalias, set, source, ., eval, type, command, jobs, fg, bg, wait, true, false, help.
 
 Line editor:
 - kiri/kanan

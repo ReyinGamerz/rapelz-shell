@@ -271,4 +271,16 @@ printf 'exit 0\n' |
 [ -f "$TMP/config-lanjut" ]
 grep -F 'baris config terlalu panjang' "$TMP/config.err" >/dev/null
 
+# Directory stack: pushd menyimpan direktori asal, popd memulihkannya,
+# dan pushd tanpa argumen menukar direktori aktif dengan entri teratas.
+run 'mkdir -p '"$TMP"'/dir-stack; pushd '"$TMP"'/dir-stack; pwd; popd; pwd; pushd '"$TMP"'/dir-stack; pushd; pwd; dirs; popd; pwd'
+assert_out "$TMP/dir-stack"
+assert_out "$ROOT"
+
+# Perintah stack harus tersedia sebagai builtin.
+run 'type pushd; type popd; type dirs'
+assert_out 'pushd adalah builtin RAPELZ'
+assert_out 'popd adalah builtin RAPELZ'
+assert_out 'dirs adalah builtin RAPELZ'
+
 echo "OK: test inti RAPELZ lulus"
