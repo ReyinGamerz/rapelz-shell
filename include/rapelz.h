@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <sys/types.h>
 
-#define RAPELZ_VERSION "0.8"
+#define RAPELZ_VERSION "0.9"
 #define RAPELZ_INPUT_SIZE 4096
 #define RAPELZ_MAX_ARGS 256
 #define RAPELZ_HISTORY_MAX 500
